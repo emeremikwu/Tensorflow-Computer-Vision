@@ -14,7 +14,7 @@ import matplotlib.image as mpimg
 # Tensorflow - deep learning software installed and to be used
 import tensorflow as tf
 
-# MNIST - digital database of handwritten digits
+# MNIST - digital database of handwritten digits. # 28x28 images of hand-written digits 0-9
 from tensorflow.keras.datasets import mnist
 
 # Keras - Python open-source neural-network library
@@ -33,21 +33,49 @@ from tensorflow.keras.preprocessing import image
 # cv2
 import cv2
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train, x_test = x_train / 255.0, x_test / 255.0
+# Main Driver
 
-model = tf.keras.models.Sequential([tf.keras.layers.Flatten(input_shape=(28,28)),tf.keras.layers.Dense(128, activation='relu'),tf.keras.layers.Dropout(0.2),tf.keras.layers.Dense(10)])
+# The idea here is taking an image, then feeding through pixel values to the neural networks. Then, to have it as neural network output, which number it actually thinks that image is.
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+#x_train, x_test = x_train / 255.0, x_test / 255.0
+x_train = tf.keras.utils.normalize(x_train, axis=1)
+x_test = tf.keras.utils.normalize(x_test, axis=1)
+
+# print(x_train[0]) # When printing it from array, 
+
+model = tf.keras.models.Sequential([tf.keras.layers.Flatten(input_shape=(28,28)),tf.keras.layers.Dense(128, activation='relu'),tf.keras.layers.Dropout(0.2),tf.keras.layers.Dense(10, activation=tf.nn.softmax)])
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
 
-model.fit(x_train, y_train, epochs=10)
+model.fit(x_train, y_train, epochs=3)
 
+val_loss, val_acc = model.evaluate(x_test, y_test)
+print(val_loss, val_acc)
+
+# Printing out results
+
+f = plt.figure(figsize=(10,5))
+plt.imshow(x_train[0], cmap=plt.cm.binary)
+plt.show()
 
 
 '''
+columns = 5
+x_train /= 255.0
+for i, image in enumerate(x_train):
+    plt.subplot(len(x_train) / columns + 1, columns, i + 1)
+    # imshow displays array-like images
+    plt.imshow(x_train[i], cmap=plt.cm.binary)
 
+plt.show()
+f.clear()
+plt.close(f)
+'''
+
+'''
 ##### Preparing Training Data #####
 
 # From MNIST, importing, training, and testing images. Keeping original images to display some digits initially and during testing.
