@@ -34,7 +34,7 @@ class DatasetLoader:
     lazyload = True
 
     _validated: bool = dataclasses.field(default=False, init=False)
-    _dataset: list[DatasetEntry] = dataclasses.field(default=None, init=False)  # list of DatasetEntry objects, will only be used if lazyload=False
+    _dataset: list = dataclasses.field(default=None, init=False)  # list of DatasetEntry objects, will only be used if lazyload=False
 
     def __post_init__(self):
         self.verifyDatasetStructure(self.path)
