@@ -12,7 +12,9 @@
       "console": "integratedTerminal",
       "args": [
         // "${command:pickArgs}"
-        "/Users/polo/Dev/Datasets/Gesture_Dataset"
+        "/Users/polo/Dev/Datasets/Gesture_Dataset",
+        "/Users/polo/Pictures/2hands.jpg",
+        "/Users/polo/Dev/Datasets/Gesture_Dataset/2/paper/images/Paper_13.jpg",
       ]
     }
   ]
