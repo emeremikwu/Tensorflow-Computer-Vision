@@ -1,17 +1,19 @@
-from pathlib import Path
+import logging
+import cv2
+from utils import landmark_to_dict
 import mediapipe as mp
 from mediapipe.tasks.python.components.containers import Landmark
 from mediapipe.framework.formats import landmark_pb2
-import json
+from numpy import ndarray
 
-from mediapipe.python import c
-
-BaseOptions = mp.tasks.BaseOptions
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-VisionRunningMode = mp.tasks.vision.RunningMode
+from formats.labeling import DatasetEntry
 
 
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+mp_hands = mp.solutions.hands
+
+# [ ] - implement
 def approximate_palm(landmarks: list[mp.datastructures.Landmark]) -> list[mp.datastructures.Landmark]:
   # Get the landmarks for the wrist and the palm:
   wrist_landmark = landmarks[0]
@@ -26,21 +28,43 @@ def approximate_palm(landmarks: list[mp.datastructures.Landmark]) -> list[mp.dat
   return approximate_palm_landmarks
 
 
-def create_image_label(
-        input_image_path: str | Path,
-        output_label_path: str | Path):
+def process_image(image_file: ndarray):
+  # For static images:
+  with mp_hands.Hands(
+          static_image_mode=True,
+          max_num_hands=2,
+          min_detection_confidence=0.5) as hands:
+    
+    logging.debug(f"Processing image: {image_file}")
+    # Convert the BGR image to RGB before processing.
+    results = hands.process(cv2.cvtColor(image_file, cv2.COLOR_BGR2RGB))
 
-  if isinstance(input_image_path, str):
-    input_image_path = Path(input_image_path)
+    # Print handedness and draw hand landmarks on the image.
+    print('Handedness:', results.multi_handedness)
+    # if not results.multi_hand_landmarks:
+    #   continue
+    image_height, image_width, _ = image_file.shape
+    annotated_image = cv2.flip(image_file.copy(), 1)
+    keypointDict = landmark_to_dict(image_file, results)
 
-  if isinstance(output_label_path, str):
-    output_label_path = Path(output_label_path)
+    for hand_landmarks in results.multi_hand_landmarks:
+      # print('hand_landmarks:', hand_landmarks)
+      print(
+          f'Index finger tip coordinates: (',
+          f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, '
+          f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})'
+      )
 
+      # flip landmarks to match the original image
+      flipped_landmarks = hand_landmarks
+      for landmark in flipped_landmarks.landmark:
+        landmark.x = 1 - landmark.x
 
-if __name__ == "__main__":
-  # Create a hand landmarker instance with the image mode:
-  options = HandLandmarkerOptions(
-      base_options=BaseOptions(model_asset_path='/testing/hand_landmarker.task'),
-      running_mode=VisionRunningMode.IMAGE)
+      mp_drawing.draw_landmarks(
+          annotated_image,
+          flipped_landmarks,  # hand_landmarks,
+          mp_hands.HAND_CONNECTIONS,
+          mp_drawing_styles.get_default_hand_landmarks_style(),
+          mp_drawing_styles.get_default_hand_connections_style())
 
-  landmarker = HandLandmarker.create_from_options(options)
+def create_image_label(dataset_entry: DatasetEntry, results): 

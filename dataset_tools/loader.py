@@ -2,7 +2,7 @@ import cv2
 import sys
 import logging
 import os
-import dataclasses
+from dataclasses import dataclass, field
 from pathlib import Path  # Experimenting with Path and os.path for learning experience
 from typing import Iterator
 
@@ -13,27 +13,7 @@ DirectoryConstraints = {
 }
 
 
-@dataclasses.dataclass
-class DatasetEntry:
-  """
-  A data class to store information about a single dataset entry.
-
-  Attributes:
-      image_path (Path): The path to the image file.
-      label_path (Path): The path to the ACTUAL label file
-      target_label_directory (Path): The path where the label is to be stored (used for labeling).
-      category (str): The category of the image (e.g., 'rock', 'paper', etc.).
-      subset (str): The subset the image belongs to.
-  """
-  image_path: Path
-  label_path: Path
-
-  target_label_directory: Path = dataclasses.field(default=None)
-  category: str = dataclasses.field(default=None)
-  subset: str = dataclasses.field(default=None)
-
-
-@dataclasses.dataclass
+@dataclass
 class DatasetLoader:
   """
   A class responsible for loading and validating a structured dataset.
@@ -48,17 +28,18 @@ class DatasetLoader:
       ignore_random_files (bool): Whether to ignore random files in the dataset.
       lazy_load (bool): Whether to lazy load the dataset
   """
-  path: str
+  root_path: str
   structured = True
   skip_validation = False
   skip_non_uniform_directory = True
   # [ ] Implement attributes load_images and load_labels
   load_images = True
   load_labels = True
+  default_target_
   ignore_random_files = True
   lazy_load = True
-  _validated: bool = dataclasses.field(default=False, init=False)
-  _dataset: list = dataclasses.field(default=None, init=False)  # Holds list of DatasetEntry objects if eager-loaded
+  _validated: bool = field(default=False, init=False)
+  _dataset: list = field(default=None, init=False)  # Holds list of DatasetEntry objects if eager-loaded
 
   def __post_init__(self) -> None:
     """
@@ -68,9 +49,9 @@ class DatasetLoader:
     if not self.load_images and not self.load_labels:
       raise ValueError("DatasetLoader must load either images or labels or both")
 
-    self.verify_dataset_structure(self.path)
+    self.verify_dataset_structure(self.root_path)
     if self._validated and not self.lazy_load:
-      self._dataset = self._load_dataset_eager(self.path)
+      self._dataset = self._load_dataset_eager(self.root_path)
 
   def update_path(self, path: str) -> None:
     """
@@ -79,10 +60,10 @@ class DatasetLoader:
     Args:
         path (str): The new dataset path.
     """
-    self.path = path
-    self.verify_dataset_structure(self.path)
+    self.root_path = path
+    self.verify_dataset_structure(self.root_path)
     if self._validated:
-      self._dataset = self.loadDataset(self.path)
+      self._dataset = self.loadDataset(self.root_path)
 
   # [ ] add validation for lable path when load_labels is True
   def verify_dataset_structure(self, path: str) -> None:
@@ -95,7 +76,7 @@ class DatasetLoader:
     Args:
         path (str): The root path of the dataset to verify.
     """
-    if self._validated and self.path == path:
+    if self._validated and self.root_path == path:
       return
 
     for folder in os.listdir(path):
@@ -131,7 +112,7 @@ class DatasetLoader:
           self._validated = False
           return
 
-    logging.info(f"Dataset structure validation complete: {self.path}")
+    logging.info(f"Dataset structure validation complete: {self.root_path}")
     self._validated = True
 
   def get_iterator(self) -> Iterator[DatasetEntry]:
@@ -148,7 +129,7 @@ class DatasetLoader:
       raise Exception("Dataset structure not validated, cannot return iterator")
 
     if self.lazy_load:
-      return self._load_dataset_lazy(self.path)  # Lazy load: yields entries one by one
+      return self._load_dataset_lazy(self.root_path)  # Lazy load: yields entries one by one
     return iter(self._dataset)  # Eager load: return pre-loaded dataset
 
   def _load_dataset_core(self, path: str) -> Iterator[DatasetEntry]:

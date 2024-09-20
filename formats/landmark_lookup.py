@@ -1,4 +1,4 @@
-LookupList = [
+LandmarkList = [
     "wrist",
 
     "thumb_metacarpal",

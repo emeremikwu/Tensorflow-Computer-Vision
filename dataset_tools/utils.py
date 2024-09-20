@@ -4,7 +4,7 @@ from loader import DatasetEntry
 from numpy import ndarray
 import json
 
-from formats.labeling_general import JsonEntry, Keypoint
+from formats.labeling import JsonEntry, Keypoint
 from formats.landmark_lookup import LandmarkDictionary
 
 # [ ] - delete
@@ -66,7 +66,7 @@ def results_to_json(dataset_entry: DatasetEntry, image: ndarray, results) -> Jso
   output_path = dataset_entry.target_label_directory
 
   entry: JsonEntry = {
-      "image_path": dataset_entry.image_path,
+      "image_path": image_path,
       "subset": dataset_entry.subset,
       "category": dataset_entry.category,
       "keypoints": keypoints
