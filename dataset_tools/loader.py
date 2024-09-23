@@ -2,9 +2,12 @@ import cv2
 import sys
 import logging
 import os
+import json
 from dataclasses import dataclass, field
 from pathlib import Path  # Experimenting with Path and os.path for learning experience
 from typing import Iterator
+
+from formats.labeling import DatasetEntry
 
 
 DirectoryConstraints = {
@@ -19,25 +22,38 @@ class DatasetLoader:
   A class responsible for loading and validating a structured dataset.
 
   Attributes:
-      path (str): The root path of the dataset.
+      root_path (str): The root path of the dataset.
+
       structured (bool): Whether the dataset is structured or not.
       skip_validation (bool): Flag to skip validation of the dataset structure.
       skip_non_uniform_directory (bool): Whether to skip directories with non-uniform file extensions.
-      load_images (bool): Whether to load images.
-      load_labels (bool): Whether to load labels.
       ignore_random_files (bool): Whether to ignore random files in the dataset.
       lazy_load (bool): Whether to lazy load the dataset
+
+      load_images (bool): Whether to load images.
+      load_image_data (bool): Whether to load image data into memory.
+      load_labels (bool): Whether to load labels.
+      load_label_data (bool): Whether to load label data.
+
   """
   root_path: str
-  structured = True
+
+  structured = True   # [ ] - implement or remove. I don't see a reason to use a non-structured dataset
   skip_validation = False
   skip_non_uniform_directory = True
-  # [ ] Implement attributes load_images and load_labels
-  load_images = True
-  load_labels = True
-  default_target_
+  skip_missing_labels = True
   ignore_random_files = True
   lazy_load = True
+
+  # [ ] Implement attributes load_images and load_labels
+  load_images = True
+  load_image_data = True
+  load_labels = True
+  load_label_data = True
+
+  initialized: bool = field(default=False, init=False)
+  # supress_missing_labels_warning: bool = field(default=True, init=False)
+
   _validated: bool = field(default=False, init=False)
   _dataset: list = field(default=None, init=False)  # Holds list of DatasetEntry objects if eager-loaded
 
@@ -50,8 +66,32 @@ class DatasetLoader:
       raise ValueError("DatasetLoader must load either images or labels or both")
 
     self.verify_dataset_structure(self.root_path)
-    if self._validated and not self.lazy_load:
-      self._dataset = self._load_dataset_eager(self.root_path)
+
+    # would be better to initialize the dataset when get_iterator is called
+    # if self._validated and not self.lazy_load:
+    #   self._dataset = self._load_dataset_eager(self.root_path)
+
+    self.initialized = True
+
+  def set_attributes(self, **kwargs: sys.Any) -> None:
+    """
+    Sets multiple attributes of the DatasetLoader at once.
+
+    Args:
+        **kwargs: A dictionary of attribute names and values.
+    """
+    current_attributes = [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
+
+    for key, value in kwargs.items():
+      if not key in current_attributes:
+        raise AttributeError(f"Attribute {key} not found in DatasetLoader")
+
+      setattr(self, key, value)
+
+  # def same thing as setAttr but using __call__
+
+  def __call__(self, *args: sys.Any, **kwds: sys.Any) -> sys.Any:
+    pass
 
   def update_path(self, path: str) -> None:
     """
@@ -151,14 +191,39 @@ class DatasetLoader:
       # Recursively find all image files in the dataset path and create DatasetEntry objects
       for image_file in Path(path).rglob('*'):
         if image_file.is_file() and image_file.suffix in ['.jpg', '.jpeg', '.png']:
-          label_destination = image_file.parent.parent / 'labels'
+
+          image_path = image_file.relative_to(path)
+          image_data = cv2.imread(str(image_file)) if self.load_images else None
+
+          # label_target_path = image_file.parent.parent / 'labels' / f'{image_path.stem}.json'
+          label_target_path = image_path.parent.parent / 'labels' / image_path.with_suffix('.json').name
+          label_path = label_target_path if self.load_lables and label_target_path.exists() else None
+
+          if self.load_label_data and not label_path:
+            if self.skip_missing_labels:
+              logging.warning(f"Label file not found: {label_target_path}, skipping entry")
+              continue
+            raise FileNotFoundError(f"Label file not found: {label_target_path}")
+
+          label_data = json.load(label_target_path.open('r')) if self.load_label_data and label_path else None
+
           category = image_file.parts[-3]  # Assumes directory structure: subset/category/images/file
           subset = image_file.parts[-4]
-          yield DatasetEntry(image_file, label_destination, category, subset)
+
+          # yield DatasetEntry(image_file, label_destination, category, subset)
+          yield DatasetEntry(
+              image_path=image_path,
+              image_data=image_data,
+              label_target_path=label_target_path,
+              label_path=label_path,
+              label_data=label_data,
+              category=category,
+              subset=subset
+          )
 
   def _load_dataset_eager(self, path: str, batch_size=1000) -> list[DatasetEntry]:
     """
-    Eagerly loads the entire dataset into memory.
+    Eagerly loads the entire dataset into memory. Associated with lazy_load=False.
 
     Args:
         path (str): The dataset root path.
@@ -239,7 +304,7 @@ if __name__ == "__main__":
   gestureDataset = DatasetLoader(path)
   for entry in gestureDataset:
     print(entry.image_path)
-    print(entry.target_label_directory)
+    print(entry.label_target_path)
     print(entry.category)
     print(entry.subset)
     print()

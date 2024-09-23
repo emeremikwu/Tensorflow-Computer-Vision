@@ -14,6 +14,8 @@ mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
 # [ ] - implement
+
+
 def approximate_palm(landmarks: list[mp.datastructures.Landmark]) -> list[mp.datastructures.Landmark]:
   # Get the landmarks for the wrist and the palm:
   wrist_landmark = landmarks[0]
@@ -28,13 +30,20 @@ def approximate_palm(landmarks: list[mp.datastructures.Landmark]) -> list[mp.dat
   return approximate_palm_landmarks
 
 
-def process_image(image_file: ndarray):
+def create_mediapipe_instance():
+  return mp_hands.Hands(
+      static_image_mode=False,
+      max_num_hands=2,
+      min_detection_confidence=0.5)
+
+
+def process_image(media_pipe_insatance, image_file: ndarray):
   # For static images:
   with mp_hands.Hands(
           static_image_mode=True,
           max_num_hands=2,
           min_detection_confidence=0.5) as hands:
-    
+
     logging.debug(f"Processing image: {image_file}")
     # Convert the BGR image to RGB before processing.
     results = hands.process(cv2.cvtColor(image_file, cv2.COLOR_BGR2RGB))
@@ -67,4 +76,6 @@ def process_image(image_file: ndarray):
           mp_drawing_styles.get_default_hand_landmarks_style(),
           mp_drawing_styles.get_default_hand_connections_style())
 
-def create_image_label(dataset_entry: DatasetEntry, results): 
+
+def create_image_label(dataset_entry: DatasetEntry, results):
+  pass

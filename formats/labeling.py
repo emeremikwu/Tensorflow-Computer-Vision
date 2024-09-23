@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import TypedDict
 from pathlib import Path
+from numpy import ndarray
+import json
 
 
 @dataclass
@@ -15,12 +17,14 @@ class DatasetEntry:
       category (str): The category of the image (e.g., 'rock', 'paper', etc.).
       subset (str): The subset the image belongs to.
   """
-  image_path: Path
-  label_path: Path = field(default=None)
 
-  image_width: int | float = field(default=None)
-  image_height: int | float = field(default=None)
-  target_label_directory: Path = field(default=None)
+  image_path: Path
+  image_data: ndarray = field(default=None)
+
+  label_target_path: Path = field(default=None)
+  label_path: Path = field(default=None)
+  label_data: ndarray = field(default=None)
+
   category: str = field(default=None)
   subset: str = field(default=None)
 
@@ -38,8 +42,21 @@ class KeypointMapping(TypedDict):
   right: list[Keypoint]
 
 
-class JsonEntry(TypedDict):
+class LabelEntry(TypedDict):
+  """
+  A typed dictionary to store information about a single labeled entry. Used for writing to JSON.
+
+  Attributes:
+      image_path (str): The path to the image file.
+      subset (str): The subset the image belongs to.
+      category (str): The category of the image (e.g., 'rock', 'paper', etc.).
+      keypoints (KeypointMapping): The keypoints of the image.
+  """
   image_path: str
   subset: str | int
   category: str
   keypoints: KeypointMapping
+
+
+if __name__ == "__main__":
+  jsfile = json.load
