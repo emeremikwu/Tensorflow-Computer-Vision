@@ -93,3 +93,6 @@ class Datasetlabeler:
 
     if not self._dataset_loader.load_image_data:
       self._error_list.append(ValueError("DatasetLoader instance not set to load image data"))
+
+    if not self._dataset_loader.lazy_load:
+      logging.warning("DatasetLoader instance not set to lazy load images, this may cause memory issues for large datasets")

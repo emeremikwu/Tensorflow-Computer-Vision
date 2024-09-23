@@ -63,7 +63,6 @@ def landmark_to_dict(image: ndarray, results):
 def results_to_json(dataset_entry: DatasetEntry, image: ndarray, results) -> LabelEntry:
   keypoints = landmark_to_dict(image, results)
   image_path = dataset_entry.image_path
-  output_path = dataset_entry.label_target_path
 
   entry: LabelEntry = {
       "image_path": image_path,

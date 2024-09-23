@@ -67,7 +67,7 @@ class DatasetLoader:
 
     self.verify_dataset_structure(self.root_path)
 
-    # would be better to initialize the dataset when get_iterator is called
+    # would be better to initialize the dataset when g
     # if self._validated and not self.lazy_load:
     #   self._dataset = self._load_dataset_eager(self.root_path)
 
