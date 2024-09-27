@@ -1,14 +1,18 @@
-import cv2
+# fmt: off
 import sys
+from itertools import repeat
+sys.path.append("..")
+# from dataset_tools.utils import landmark_to_dict
+import cv2
+import pathlib
 import numpy as np
 import mediapipe as mp
 from mediapipe import Image, solutions
 from mediapipe.framework.formats import landmark_pb2
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+# fmt: on
 
-sys.path.insert(1, "/Users/polo/Dev/Tensorflow-Computer-Vision/dataset_tools")
-from utils import landmark_to_dict
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -91,7 +95,10 @@ def impl1():
 
 def impl2():
   # For static images:
-  IMAGE_FILES = [sys.argv[2]]
+  # ["/tmp/dataset_s58dz28v/NQnywzqvbS/paper/images/both_hands.jpg", sys.argv[5]]
+  # IMAGE_FILES = list(repeat("/tmp/dataset_crs0efao/tSzhwGMpSa/paper/images/both_hands.jpg", 10))
+
+  IMAGE_FILES = [str(img) for img in pathlib.Path("/tmp/dataset_crs0efao/tSzhwGMpSa/").rglob("*.jpg")]
   with mp_hands.Hands(
           static_image_mode=True,
           max_num_hands=2,
@@ -110,7 +117,7 @@ def impl2():
         continue
       image_height, image_width, _ = image.shape
       annotated_image = cv2.flip(image.copy(), 1)
-      keypointDict = landmark_to_dict(image, results)
+      # keypointDict = landmark_to_dict(image, results)
 
       for hand_landmarks in results.multi_hand_landmarks:
         # print('hand_landmarks:', hand_landmarks)
@@ -137,8 +144,8 @@ def impl2():
       if not results.multi_hand_world_landmarks:
         continue
 
-      cv2.imshow('MediaPipe Hands', annotated_image)
-      cv2.waitKey(0)
+      # cv2.imshow('MediaPipe Hands', annotated_image)
+      # cv2.waitKey(0)
       # for hand_world_landmarks in results.multi_hand_world_landmarks:
       #   mp_drawing.plot_landmarks(
       #       hand_world_landmarks, mp_hands.HAND_CONNECTIONS, azimuth=5)
