@@ -1,13 +1,17 @@
+
 import logging
 import cv2
+import sys
+from pathlib import Path
+from typing import Optional
 
 from numpy import ndarray
 from dataclasses import dataclass, field
 import mediapipe as mp
 from mediapipe.tasks.python.components.containers import Landmark
 
-from utils import results_to_json, write_json_to_file
-from loader import DatasetLoader
+from .utils import results_to_json, write_json_to_file
+from .loader import DatasetLoader
 from formats.labeling import DatasetEntry
 
 mp_drawing = mp.solutions.drawing_utils
@@ -16,19 +20,19 @@ mp_hands = mp.solutions.hands
 
 
 @dataclass
-class Datasetlabeler:
+class DatasetLabeler:
   _dataset_loader: DatasetLoader = None
   overwrite_existing: bool = False
   _ready = False
   _error_list = []
-  _hand_detector = field(init=False, default=None)
+  _hand_detector: Optional[mp.solutions.hands.Hands] = field(init=False, default=None)
 
   # initialize mediapipe hands
   def __post_init__(self):
     self._check_if_ready()
 
     self._hand_detector = mp_hands.Hands(
-        static_image_mode=False,
+        static_image_mode=True,
         max_num_hands=2,
         min_detection_confidence=0.5)
 
@@ -56,25 +60,33 @@ class Datasetlabeler:
   def process_images(self):
 
     if not self.is_ready:
+      print("Not ready")
       return
 
     logging.info("Processing images...")
 
     for entry in self._dataset_loader.get_iterator():
-
-      logging.debug(f'Processing image: {entry.image_path}, {entry.image_data.shape}')
+      logging.debug(f'Processing image: ../{entry.image_path}, {entry.image_data.shape}')
 
       # Convert the BGR image to RGB before processing.
       image_copy = cv2.flip(entry.image_data.copy(), 1)
       results = self._hand_detector.process(cv2.cvtColor(image_copy, cv2.COLOR_BGR2RGB))
 
       # Flip the x-coordinates of the landmarks
-      for hand_landmarks in results.multi_hand_landmarks:
-        for landmark in hand_landmarks.landmark:
-          landmark.x = 1 - landmark.x
+      if results.multi_hand_landmarks:
+        for hand_landmarks in results.multi_hand_landmarks:
+          for landmark in hand_landmarks.landmark:
+            landmark.x = 1 - landmark.x
 
+      # json_data = (entry, entry.image_data, results)
       json_data = results_to_json(entry, entry.image_data, results)
+
+      parent_folder = entry.label_target_path.parent
+      if not parent_folder.exists():
+        entry.label_target_path.parent.mkdir()
+
       write_json_to_file(json_data, entry.label_target_path)  # [ ] - error handling
+      logging.info(f"Label file written to {entry.label_target_path.relative_to(self._dataset_loader.root_path)}")
 
   def label(self, dataset):
     for item in dataset:
@@ -96,3 +108,18 @@ class Datasetlabeler:
 
     if not self._dataset_loader.lazy_load:
       logging.warning("DatasetLoader instance not set to lazy load images, this may cause memory issues for large datasets")
+
+
+if __name__ == "__main__":
+  logging.basicConfig(level=logging.DEBUG)
+
+  #
+  from unittests.dataset_generator import generate_temporary_dataset
+  root_path, subsets, cleanup_callback = generate_temporary_dataset(sys.argv[4])
+
+  loader = DatasetLoader(root_path, load_labels=False, load_label_data=False)
+  labeler = DatasetLabeler(loader)
+  labeler.process_images()
+  cleanup_callback()
+
+  print("done")

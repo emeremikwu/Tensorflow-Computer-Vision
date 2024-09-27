@@ -4,7 +4,7 @@ import logging
 import os
 import json
 from dataclasses import dataclass, field
-from pathlib import Path  # Experimenting with Path and os.path for learning experience
+from pathlib import Path, PurePath  # Experimenting with Path and os.path for learning experience
 from typing import Iterator
 
 from formats.labeling import DatasetEntry
@@ -38,18 +38,18 @@ class DatasetLoader:
   """
   root_path: str
 
-  structured = True   # [ ] - implement or remove. I don't see a reason to use a non-structured dataset
-  skip_validation = False
-  skip_non_uniform_directory = True
-  skip_missing_labels = True
+  structured: bool = True   # [ ] - implement or remove. I don't see a reason to use a non-structured dataset
+  skip_validation: bool = False
+  skip_non_uniform_directory: bool = True
+  skip_missing_labels: bool = True
   ignore_random_files = True
   lazy_load = True
 
   # [ ] Implement attributes load_images and load_labels
-  load_images = True
-  load_image_data = True
-  load_labels = True
-  load_label_data = True
+  load_images: bool = True
+  load_image_data: bool = True
+  load_labels: bool = True
+  load_label_data: bool = True
 
   initialized: bool = field(default=False, init=False)
   # supress_missing_labels_warning: bool = field(default=True, init=False)
@@ -73,7 +73,7 @@ class DatasetLoader:
 
     self.initialized = True
 
-  def set_attributes(self, **kwargs: sys.Any) -> None:
+  def set_attributes(self, **kwargs: any) -> None:
     """
     Sets multiple attributes of the DatasetLoader at once.
 
@@ -90,7 +90,7 @@ class DatasetLoader:
 
   # def same thing as setAttr but using __call__
 
-  def __call__(self, *args: sys.Any, **kwds: sys.Any) -> sys.Any:
+  def __call__(self, *args: any, **kwds: any) -> any:
     pass
 
   def update_path(self, path: str) -> None:
@@ -195,9 +195,12 @@ class DatasetLoader:
           image_path = image_file.relative_to(path)
           image_data = cv2.imread(str(image_file)) if self.load_images else None
 
-          # label_target_path = image_file.parent.parent / 'labels' / f'{image_path.stem}.json'
-          label_target_path = image_path.parent.parent / 'labels' / image_path.with_suffix('.json').name
-          label_path = label_target_path if self.load_lables and label_target_path.exists() else None
+          category = image_file.parts[-3]  # Assumes directory structure: subset/category/images/file
+          subset = image_file.parts[-4]
+
+          label_target_path = self.root_path / subset / category / 'labels' / image_path.with_suffix('.json').name
+          # label_target_path = Path(image_file.parents[2], subset, category, 'labels', image_path.with_suffix('.json').name)
+          label_path = label_target_path if self.load_labels and label_target_path.exists() else None
 
           if self.load_label_data and not label_path:
             if self.skip_missing_labels:
@@ -206,9 +209,6 @@ class DatasetLoader:
             raise FileNotFoundError(f"Label file not found: {label_target_path}")
 
           label_data = json.load(label_target_path.open('r')) if self.load_label_data and label_path else None
-
-          category = image_file.parts[-3]  # Assumes directory structure: subset/category/images/file
-          subset = image_file.parts[-4]
 
           # yield DatasetEntry(image_file, label_destination, category, subset)
           yield DatasetEntry(
@@ -250,7 +250,10 @@ class DatasetLoader:
         Iterator[DatasetEntry]: An iterator that yields DatasetEntry objects lazily.
     """
     for entry in self._load_dataset_core(path):
-      logging.debug(f"Lazy loaded: {entry.image_path.relative_to(path)}")
+      # we could use resolve() instead but theres a potential that it could raise an exception or become an infinite loop.
+      # building the path is probably the best way to go (safer, faster, and more predictable)
+      image_full_path = PurePath(path, entry.image_path)
+      logging.debug(f"Lazy loaded: {image_full_path.relative_to(path)}")
       yield entry
 
   @staticmethod

@@ -1,9 +1,9 @@
 # TODO: cleanup
 from mediapipe.framework.formats import landmark_pb2
-from loader import DatasetEntry
+from formats.labeling import DatasetEntry
 from numpy import ndarray
 import json
-
+from pathlib import Path
 from formats.labeling import LabelEntry, Keypoint
 from formats.landmark_lookup import LandmarkDictionary
 
@@ -44,6 +44,9 @@ def landmark_to_dict(image: ndarray, results):
       "right": [],
   }
 
+  if not results.multi_hand_landmarks:
+    return keypoints
+
   for i, hand in enumerate(results.multi_handedness):
     handedness = str(hand.classification[0].label).lower()
 
@@ -62,7 +65,7 @@ def landmark_to_dict(image: ndarray, results):
 
 def results_to_json(dataset_entry: DatasetEntry, image: ndarray, results) -> LabelEntry:
   keypoints = landmark_to_dict(image, results)
-  image_path = dataset_entry.image_path
+  image_path = str(dataset_entry.image_path)
 
   entry: LabelEntry = {
       "image_path": image_path,
@@ -74,7 +77,10 @@ def results_to_json(dataset_entry: DatasetEntry, image: ndarray, results) -> Lab
   return entry
 
 
-def write_json_to_file(data: json, destination: str) -> None:
+def write_json_to_file(data: json, destination: str | Path) -> None:
+  if (isinstance(destination, Path)):
+    destination = str(destination)
+
   with open(str(destination), 'w') as output_file:
     json.dump(data, output_file, indent=4)
 
