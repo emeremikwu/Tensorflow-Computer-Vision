@@ -66,6 +66,11 @@ class DatasetLabeler:
     logging.info("Processing images...")
 
     for entry in self._dataset_loader.get_iterator():
+      # Skip if the label file already exists and we're not overwriting
+      if entry.label_target_path.exists() and not self.overwrite_existing:
+        logging.info(f"Label file already exists, skipping: {entry.label_target_path.relative_to(self._dataset_loader.root_path)}")
+        continue
+
       logging.debug(f'Processing image: ../{entry.image_path}, {entry.image_data.shape}')
 
       # Convert the BGR image to RGB before processing.

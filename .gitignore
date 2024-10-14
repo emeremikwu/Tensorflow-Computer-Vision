@@ -133,3 +133,5 @@ dmypy.json
 
 # venv
 .venv/
+
+config/t.py

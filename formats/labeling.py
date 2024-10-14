@@ -42,7 +42,7 @@ class KeypointMapping(TypedDict):
   right: list[Keypoint]
 
 
-class LabelEntry(TypedDict):
+class JsonLabelEntry(TypedDict):
   """
   A typed dictionary to store information about a single labeled entry. Used for writing to JSON.
 
@@ -53,10 +53,12 @@ class LabelEntry(TypedDict):
       keypoints (KeypointMapping): The keypoints of the image.
   """
   image_path: str
+  image_width: float
+  image_height: float
   subset: str | int
   category: str
   keypoints: KeypointMapping
 
 
-if __name__ == "__main__":
-  jsfile = json.load
+# if __name__ == "__main__":
+#   jsfile = json.load

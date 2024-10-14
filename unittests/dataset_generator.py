@@ -6,11 +6,11 @@ import sys
 import logging
 
 
-def generate_temporary_dataset(test_images_path: str) -> tuple[Path, list[Path], callable]:
+def generate_temporary_dataset(test_images_path: str, delete=True) -> tuple[Path, list[Path], callable]:
   if (not Path(test_images_path).exists()):
     raise FileNotFoundError(f"Path {test_images_path} does not exist")
 
-  tmp_workspace = tempfile.TemporaryDirectory(prefix="dataset_")
+  tmp_workspace = tempfile.TemporaryDirectory(prefix="dataset_", delete=delete)
   root_path = Path(tmp_workspace.name)
 
   logging.debug(f"temporary workspace directory: {tmp_workspace.name}")

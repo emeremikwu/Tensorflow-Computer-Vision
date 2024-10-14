@@ -3,7 +3,7 @@ import sys
 import pathlib
 import unittest
 import json
-from formats.labeling import LabelEntry
+from formats.labeling import JsonLabelEntry
 
 
 # fmt: off
@@ -54,7 +54,7 @@ class LabelerTest(unittest.TestCase):
 
       with self.subTest(f"Checking {json_file.name}", json_file=str(json_file)):
         with open(json_file, "r") as file:
-          data: LabelEntry = json.load(file)
+          data: JsonLabelEntry = json.load(file)
           keypoints = data.get("keypoints", {})
 
           # check if left and right keypoint exists

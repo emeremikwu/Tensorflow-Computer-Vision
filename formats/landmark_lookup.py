@@ -26,7 +26,7 @@ LandmarkList = [
     "pinky_distal",
     "pinky_tip",
 
-    "palm",
+    # "palm",
 ]
 
 LandmarkDictionary = {
@@ -57,5 +57,5 @@ LandmarkDictionary = {
     19: "pinky_distal",
     20: "pinky_tip",
 
-    21: "palm",
+    # 21: "palm",
 }

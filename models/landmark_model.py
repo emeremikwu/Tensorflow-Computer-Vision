@@ -8,18 +8,25 @@ import logging
 
 class LandmarkModel():
 
-  def __init__(self, input_shape: tuple, output_shape: tuple):
+  def __init__(self,
+               input_shape: tuple = None,
+               output_shape: tuple = None):
+
     self.input_shape = input_shape
     self.output_shape = output_shape
-    self.model = self.build_model()
+    model = self.build_model() if input_shape and output_shape else None
     self.recent_history: callbacks.History = None
+    self._preloaded_data: bool = False
 
-  @staticmethod
-  def from_saved_model(model_path: str):
-    model: models.Sequential = models.load_model(model_path)
-    input_shape = model.input_shape[1:]
-    output_shape = model.output_shape[1:]
-    return LandmarkModel(input_shape, output_shape)
+  def initialize_from_file(model_path: str):
+    saved_model: models.Sequential = models.load_model(model_path)
+
+    model = LandmarkModel()
+    model.model = saved_model
+    model.input_shape = saved_model.input_shape
+    model.output_shape = saved_model.output_shape
+    model._preloaded_data = True
+    return model
 
   def build_model(self) -> models.Sequential:
 
@@ -56,6 +63,7 @@ class LandmarkModel():
         loss=self.masked_mse,
         metrics=['accuracy']
     )
+
     return model
 
   def masked_mse(self, y_true, y_pred):
@@ -69,6 +77,10 @@ class LandmarkModel():
     return masked_mse
 
   def train(self, x_train, y_train, x_test, y_test, epochs=10, batch_size=32) -> callbacks.History:
+    if self._preloaded_data:
+      logging.error("Cannot train model with preloaded data.")
+      return None
+
     self.recent_history = self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x_test, y_test))
     return self.recent_history
 

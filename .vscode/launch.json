@@ -4,35 +4,37 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+    
     {
-      "name": "Main with tests",
+      "name": "test: Main with args",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
       "console": "integratedTerminal",
       "args": [
-        "/home/polo-wsl/Dev/Tensorflow-Computer-Vision/unittests/images",
+        // "/home/polo-wsl/Dev/Tensorflow-Computer-Vision/unittests/images",
+        "--label",
+        // "./"
       ]
     },
     {
-      "name": "debug dataset_generator.py",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "unittests/dataset_generator"
-    },
-    {
-      "name": "Python Debugger: Current File with Arguments",
+      "name": "Python Debugger: Current with Arguments and env",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+
       "args": [
         // "${command:pickArgs}"
         "/Users/polo/Dev/Datasets/Gesture_Dataset",
         "/Users/polo/Pictures/2hands.jpg",
         "/Users/polo/Dev/Datasets/Gesture_Dataset/2/paper/images/Paper_13.jpg",
         "/home/polo-wsl/Dev/Tensorflow-Computer-Vision/unittests/images",
-        "/home/polo-wsl/Dev/Tensorflow-Computer-Vision/unittests/images/both_hands.jpg"
+        "/home/polo-wsl/Dev/Tensorflow-Computer-Vision/unittests/images/both_hands.jpg",
+        "/home/polo-wsl/Paper_5.jpg"
       ]
     }
   ]
